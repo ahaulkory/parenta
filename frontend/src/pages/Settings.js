@@ -1,4 +1,4 @@
-// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API
+// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API + Gmail
 
 import React, { useState } from 'react';
 import {
@@ -14,6 +14,7 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import { GoogleLogin } from '@react-oauth/google';
 
 const PageTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
@@ -124,6 +125,46 @@ const Settings = () => {
                 onClick={() => openEditDialog('Email', 'jean@exemple.fr', (val) => updateUserInfo('email', val))}>
                 Modifier
               </Button>
+            </ListItem>
+          </List>
+        </SettingsCard>
+
+        <SectionTitle variant="h6">Intégrations</SectionTitle>
+        <SettingsCard>
+          <List disablePadding>
+            <ListItem>
+              <ListItemIcon><EmailIcon color="primary" /></ListItemIcon>
+              <ListItemText primary="Gmail" secondary="Non connecté" />
+              <Box sx={{ ml: 1 }}>
+                <GoogleLogin
+                  onSuccess={credentialResponse => {
+                    console.log("✅ Gmail connecté :", credentialResponse);
+                    fetch(`${process.env.REACT_APP_API_URL}/auth/google`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ token: credentialResponse.credential })
+                    })
+                      .then(res => res.json())
+                      .then(data => {
+                        console.log("Réponse backend:", data);
+                      })
+                      .catch(err => console.error("Erreur Google login :", err));
+                  }}
+                  onError={() => console.log("❌ Erreur de connexion Google")}
+                />
+              </Box>
+            </ListItem>
+
+            <Divider component="li" />
+            <ListItem>
+              <ListItemIcon><CalendarMonthIcon color="primary" /></ListItemIcon>
+              <ListItemText primary="Google Calendar" secondary="Non connecté" />
+            </ListItem>
+
+            <Divider component="li" />
+            <ListItem>
+              <ListItemIcon><WbSunnyIcon color="primary" /></ListItemIcon>
+              <ListItemText primary="OpenWeatherMap" secondary="Connecté" />
             </ListItem>
           </List>
         </SettingsCard>
