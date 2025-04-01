@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Box, CssBaseline, Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar } from '@mui/material';
+import {
+  Box,
+  CssBaseline,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Toolbar
+} from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -14,6 +23,8 @@ import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
 import Lists from './pages/Lists';
 import Settings from './pages/Settings';
+
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import './App.css';
 
@@ -36,10 +47,10 @@ function App() {
           { text: 'Listes', icon: <ListAltIcon />, path: '/lists' },
           { text: 'Paramètres', icon: <SettingsIcon />, path: '/settings' },
         ].map((item) => (
-          <ListItem 
-            button 
-            key={item.text} 
-            component="a" 
+          <ListItem
+            button
+            key={item.text}
+            component="a"
             href={item.path}
             onClick={toggleDrawer}
           >
@@ -57,7 +68,7 @@ function App() {
       <Router>
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <Header toggleDrawer={toggleDrawer} />
-          
+
           <Drawer
             variant="temporary"
             open={drawerOpen}
@@ -72,7 +83,7 @@ function App() {
           >
             {drawer}
           </Drawer>
-          
+
           <Box component="main" sx={{ flexGrow: 1, pb: 7 }}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -81,7 +92,7 @@ function App() {
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </Box>
-          
+
           <Navigation />
         </Box>
       </Router>
@@ -89,4 +100,10 @@ function App() {
   );
 }
 
-export default App;
+const AppWrapper = () => (
+  <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+    <App />
+  </GoogleOAuthProvider>
+);
+
+export default AppWrapper;
