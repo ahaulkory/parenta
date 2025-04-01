@@ -1,5 +1,11 @@
+// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API
+
 import React, { useState } from 'react';
-import { Box, Container, Typography, List, ListItem, ListItemText, ListItemIcon, Divider, Switch, Paper, Button, Avatar, ListItemAvatar } from '@mui/material';
+import {
+  Box, Container, Typography, List, ListItem, ListItemText, ListItemIcon,
+  Divider, Paper, Button, Avatar, ListItemAvatar, Dialog, DialogTitle,
+  DialogContent, DialogActions, TextField
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
@@ -11,7 +17,6 @@ import EditIcon from '@mui/icons-material/Edit';
 
 const PageTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
-  color: theme.palette.text.primary,
   marginBottom: theme.spacing(3),
   marginTop: theme.spacing(2),
 }));
@@ -31,139 +36,98 @@ const SettingsCard = styled(Paper)(({ theme }) => ({
 }));
 
 const Settings = () => {
-  // États pour les intégrations
   const [integrations, setIntegrations] = useState({
-    gmail: true,
+    gmail: false,
     outlook: false,
-    googleCalendar: true,
+    googleCalendar: false,
   });
 
-  // Données de démonstration pour les enfants
   const [children, setChildren] = useState([
     { id: 1, name: 'Lucas', age: 8 },
     { id: 2, name: 'Emma', age: 6 },
   ]);
 
-  const handleIntegrationChange = (integration) => {
-    setIntegrations({
-      ...integrations,
-      [integration]: !integrations[integration],
-    });
+  const [editDialog, setEditDialog] = useState({ open: false, label: '', value: '', onSave: () => {} });
+
+  const openEditDialog = (label, currentValue, onSave) => {
+    setEditDialog({ open: true, label, value: currentValue, onSave });
+  };
+
+  const handleDialogSave = () => {
+    editDialog.onSave(editDialog.value);
+    setEditDialog({ ...editDialog, open: false });
+  };
+
+  const updateUserInfo = async (field, value) => {
+    try {
+      await fetch(`/api/user/${field}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value })
+      });
+    } catch (error) {
+      console.error(`Erreur mise à jour ${field}:`, error);
+    }
+  };
+
+  const addChild = async () => {
+    const newChild = { name: 'Nouvel enfant', age: 0 };
+    try {
+      const res = await fetch('/api/children', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newChild)
+      });
+      const created = await res.json();
+      setChildren([...children, created]);
+    } catch (err) {
+      console.error('Erreur ajout enfant:', err);
+    }
+  };
+
+  const updateChild = async (childId, updatedData) => {
+    try {
+      await fetch(`/api/children/${childId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      setChildren(
+        children.map((c) => (c.id === childId ? { ...c, ...updatedData } : c))
+      );
+    } catch (err) {
+      console.error('Erreur mise à jour enfant:', err);
+    }
   };
 
   return (
     <Container maxWidth="sm">
-      <Box sx={{ flexGrow: 1, mb: 8, mt: 2 }}>
+      <Box sx={{ mb: 8, mt: 2 }}>
         <PageTitle variant="h5">Paramètres</PageTitle>
-        
+
         <SectionTitle variant="h6">Compte</SectionTitle>
         <SettingsCard>
           <List disablePadding>
             <ListItem>
-              <ListItemIcon>
-                <PersonIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Nom" 
-                secondary="Jean Dupont" 
-              />
-              <Button 
-                startIcon={<EditIcon />} 
-                size="small" 
-                variant="outlined"
-              >
+              <ListItemIcon><PersonIcon color="primary" /></ListItemIcon>
+              <ListItemText primary="Nom" secondary="Jean Dupont" />
+              <Button startIcon={<EditIcon />} size="small" variant="outlined"
+                onClick={() => openEditDialog('Nom', 'Jean Dupont', (val) => updateUserInfo('name', val))}>
                 Modifier
               </Button>
             </ListItem>
             <Divider component="li" />
             <ListItem>
-              <ListItemIcon>
-                <EmailIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Email" 
-                secondary="jean@exemple.fr" 
-              />
-              <Button 
-                startIcon={<EditIcon />} 
-                size="small" 
-                variant="outlined"
-              >
+              <ListItemIcon><EmailIcon color="primary" /></ListItemIcon>
+              <ListItemText primary="Email" secondary="jean@exemple.fr" />
+              <Button startIcon={<EditIcon />} size="small" variant="outlined"
+                onClick={() => openEditDialog('Email', 'jean@exemple.fr', (val) => updateUserInfo('email', val))}>
                 Modifier
               </Button>
             </ListItem>
           </List>
         </SettingsCard>
-        
-        <SectionTitle variant="h6">Intégrations</SectionTitle>
-        <SettingsCard>
-          <List disablePadding>
-            <ListItem>
-              <ListItemIcon>
-                <EmailIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Gmail" 
-                secondary={integrations.gmail ? "Connecté" : "Non connecté"} 
-              />
-              <Switch
-                edge="end"
-                checked={integrations.gmail}
-                onChange={() => handleIntegrationChange('gmail')}
-                color="primary"
-              />
-            </ListItem>
-            <Divider component="li" />
-            <ListItem>
-              <ListItemIcon>
-                <EmailIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Outlook" 
-                secondary={integrations.outlook ? "Connecté" : "Non connecté"} 
-              />
-              <Switch
-                edge="end"
-                checked={integrations.outlook}
-                onChange={() => handleIntegrationChange('outlook')}
-                color="primary"
-              />
-            </ListItem>
-            <Divider component="li" />
-            <ListItem>
-              <ListItemIcon>
-                <CalendarMonthIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Google Calendar" 
-                secondary={integrations.googleCalendar ? "Connecté" : "Non connecté"} 
-              />
-              <Switch
-                edge="end"
-                checked={integrations.googleCalendar}
-                onChange={() => handleIntegrationChange('googleCalendar')}
-                color="primary"
-              />
-            </ListItem>
-            <Divider component="li" />
-            <ListItem>
-              <ListItemIcon>
-                <WbSunnyIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="OpenWeatherMap" 
-                secondary="Connecté" 
-              />
-              <Switch
-                edge="end"
-                checked={true}
-                disabled
-                color="primary"
-              />
-            </ListItem>
-          </List>
-        </SettingsCard>
-        
+
         <SectionTitle variant="h6">Enfants</SectionTitle>
         <SettingsCard>
           <List disablePadding>
@@ -171,19 +135,14 @@ const Settings = () => {
               <React.Fragment key={child.id}>
                 <ListItem>
                   <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: 'primary.main' }}>
-                      <ChildCareIcon />
-                    </Avatar>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><ChildCareIcon /></Avatar>
                   </ListItemAvatar>
-                  <ListItemText 
-                    primary={child.name} 
-                    secondary={`${child.age} ans`} 
-                  />
-                  <Button 
-                    startIcon={<EditIcon />} 
-                    size="small" 
-                    variant="outlined"
-                  >
+                  <ListItemText primary={child.name} secondary={`${child.age} ans`} />
+                  <Button startIcon={<EditIcon />} size="small" variant="outlined"
+                    onClick={() => openEditDialog('Enfant', `${child.name},${child.age}`, (val) => {
+                      const [name, age] = val.split(',');
+                      updateChild(child.id, { name, age: parseInt(age) });
+                    })}>
                     Modifier
                   </Button>
                 </ListItem>
@@ -191,17 +150,29 @@ const Settings = () => {
               </React.Fragment>
             ))}
             <ListItem sx={{ mt: 1 }}>
-              <Button 
-                startIcon={<AddIcon />} 
-                variant="contained" 
-                color="primary"
-                fullWidth
-              >
+              <Button startIcon={<AddIcon />} variant="contained" color="primary" fullWidth onClick={addChild}>
                 Ajouter un enfant
               </Button>
             </ListItem>
           </List>
         </SettingsCard>
+
+        <Dialog open={editDialog.open} onClose={() => setEditDialog({ ...editDialog, open: false })}>
+          <DialogTitle>Modifier {editDialog.label}</DialogTitle>
+          <DialogContent>
+            <TextField
+              fullWidth
+              autoFocus
+              label={editDialog.label}
+              value={editDialog.value}
+              onChange={(e) => setEditDialog({ ...editDialog, value: e.target.value })}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDialog({ ...editDialog, open: false })}>Annuler</Button>
+            <Button onClick={handleDialogSave} variant="contained">Enregistrer</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Container>
   );
