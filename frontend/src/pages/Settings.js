@@ -1,6 +1,6 @@
-// ✅ SETTINGS.JS — Intégration Google Calendar + Outlook + API enfants + logs
+// ✅ SETTINGS.JS — Google Calendar + Outlook + Enfants + API + Logs (NO Gmail)
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Container, Typography, List, ListItem, ListItemText, ListItemIcon,
   Divider, Paper, Button, Avatar, ListItemAvatar, Dialog, DialogTitle,
@@ -40,14 +40,22 @@ const GOOGLE_CLIENT_ID = "202665524576-u77evvg8asql5qjodiafpm403unas52a.apps.goo
 const API_URL = "https://parenta-backend.onrender.com/api";
 
 const Settings = () => {
-  console.log("🟢 Composant Settings monté");
-
-  const [children, setChildren] = useState([
-    { id: 1, name: 'Lucas', age: 8 },
-    { id: 2, name: 'Emma', age: 6 },
-  ]);
-
+  const [children, setChildren] = useState([]);
   const [editDialog, setEditDialog] = useState({ open: false, label: '', value: '', onSave: () => {} });
+
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        const res = await fetch(`${API_URL}/children`);
+        const data = await res.json();
+        console.log("📦 Enfants récupérés :", data);
+        setChildren(data);
+      } catch (err) {
+        console.error("❌ Erreur chargement enfants :", err);
+      }
+    };
+    fetchChildren();
+  }, []);
 
   const openEditDialog = (label, currentValue, onSave) => {
     setEditDialog({ open: true, label, value: currentValue, onSave });
