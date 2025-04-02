@@ -1,4 +1,4 @@
-// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API + Gmail + LOGS
+// ✅ SETTINGS.JS — Intégration Google Calendar + Outlook + API enfants + logs
 
 import React, { useState } from 'react';
 import {
@@ -14,7 +14,7 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 
 const PageTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
@@ -36,14 +36,11 @@ const SettingsCard = styled(Paper)(({ theme }) => ({
   marginBottom: theme.spacing(3),
 }));
 
+const GOOGLE_CLIENT_ID = "202665524576-u77evvg8asql5qjodiafpm403unas52a.apps.googleusercontent.com";
+const API_URL = "https://parenta-backend.onrender.com/api";
+
 const Settings = () => {
   console.log("🟢 Composant Settings monté");
-
-  const [integrations, setIntegrations] = useState({
-    gmail: false,
-    outlook: false,
-    googleCalendar: false,
-  });
 
   const [children, setChildren] = useState([
     { id: 1, name: 'Lucas', age: 8 },
@@ -53,25 +50,22 @@ const Settings = () => {
   const [editDialog, setEditDialog] = useState({ open: false, label: '', value: '', onSave: () => {} });
 
   const openEditDialog = (label, currentValue, onSave) => {
-    console.log(`✏️ Ouverture du Dialog pour ${label} avec valeur actuelle: ${currentValue}`);
     setEditDialog({ open: true, label, value: currentValue, onSave });
   };
 
   const handleDialogSave = () => {
-    console.log(`💾 Sauvegarde via Dialog de ${editDialog.label} avec valeur: ${editDialog.value}`);
     editDialog.onSave(editDialog.value);
     setEditDialog({ ...editDialog, open: false });
   };
 
   const updateUserInfo = async (field, value) => {
-    console.log(`📡 Mise à jour utilisateur : ${field} => ${value}`);
+    console.log(`🔄 Mise à jour utilisateur : ${field} = ${value}`);
     try {
-      await fetch(`/api/user/${field}`, {
+      await fetch(`${API_URL}/user/${field}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
       });
-      console.log(`✅ ${field} mis à jour avec succès`);
     } catch (error) {
       console.error(`❌ Erreur mise à jour ${field}:`, error);
     }
@@ -81,151 +75,156 @@ const Settings = () => {
     console.log("👶 Bouton 'Ajouter un enfant' cliqué");
     const newChild = { name: 'Nouvel enfant', age: 0 };
     try {
-      const res = await fetch('/api/children', {
+      const res = await fetch(`${API_URL}/children`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newChild)
       });
       const created = await res.json();
-      console.log("✅ Enfant ajouté:", created);
-      setChildren([...children, created]);
+      console.log("✅ Enfant ajouté :", created);
+      setChildren(prev => [...prev, created]);
     } catch (err) {
       console.error('❌ Erreur ajout enfant:', err);
     }
   };
 
   const updateChild = async (childId, updatedData) => {
-    console.log(`🛠️ Mise à jour enfant ID ${childId} avec :`, updatedData);
+    console.log("✏️ Mise à jour enfant :", childId, updatedData);
     try {
-      await fetch(`/api/children/${childId}`, {
+      await fetch(`${API_URL}/children/${childId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
       });
-      setChildren(
-        children.map((c) => (c.id === childId ? { ...c, ...updatedData } : c))
+      setChildren(prev =>
+        prev.map((c) => (c.id === childId ? { ...c, ...updatedData } : c))
       );
-      console.log("✅ Enfant mis à jour dans le state");
     } catch (err) {
       console.error('❌ Erreur mise à jour enfant:', err);
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mb: 8, mt: 2 }}>
-        <PageTitle variant="h5">Paramètres</PageTitle>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Container maxWidth="sm">
+        <Box sx={{ mb: 8, mt: 2 }}>
+          <PageTitle variant="h5">Paramètres</PageTitle>
 
-        <SectionTitle variant="h6">Compte</SectionTitle>
-        <SettingsCard>
-          <List disablePadding>
-            <ListItem>
-              <ListItemIcon><PersonIcon color="primary" /></ListItemIcon>
-              <ListItemText primary="Nom" secondary="Jean Dupont" />
-              <Button startIcon={<EditIcon />} size="small" variant="outlined"
-                onClick={() => openEditDialog('Nom', 'Jean Dupont', (val) => updateUserInfo('name', val))}>
-                Modifier
-              </Button>
-            </ListItem>
-            <Divider component="li" />
-            <ListItem>
-              <ListItemIcon><EmailIcon color="primary" /></ListItemIcon>
-              <ListItemText primary="Email" secondary="jean@exemple.fr" />
-              <Button startIcon={<EditIcon />} size="small" variant="outlined"
-                onClick={() => openEditDialog('Email', 'jean@exemple.fr', (val) => updateUserInfo('email', val))}>
-                Modifier
-              </Button>
-            </ListItem>
-          </List>
-        </SettingsCard>
+          <SectionTitle variant="h6">Compte</SectionTitle>
+          <SettingsCard>
+            <List disablePadding>
+              <ListItem>
+                <ListItemIcon><PersonIcon color="primary" /></ListItemIcon>
+                <ListItemText primary="Nom" secondary="Jean Dupont" />
+                <Button startIcon={<EditIcon />} size="small" variant="outlined"
+                  onClick={() => openEditDialog('Nom', 'Jean Dupont', (val) => updateUserInfo('name', val))}>
+                  Modifier
+                </Button>
+              </ListItem>
+              <Divider component="li" />
+              <ListItem>
+                <ListItemIcon><EmailIcon color="primary" /></ListItemIcon>
+                <ListItemText primary="Email" secondary="jean@exemple.fr" />
+                <Button startIcon={<EditIcon />} size="small" variant="outlined"
+                  onClick={() => openEditDialog('Email', 'jean@exemple.fr', (val) => updateUserInfo('email', val))}>
+                  Modifier
+                </Button>
+              </ListItem>
+            </List>
+          </SettingsCard>
 
-        <SectionTitle variant="h6">Intégrations</SectionTitle>
-        <SettingsCard>
-          <List disablePadding>
-            <ListItem>
-              <ListItemIcon><EmailIcon color="primary" /></ListItemIcon>
-              <ListItemText primary="Gmail" secondary="Non connecté" />
-              <Box sx={{ ml: 1 }}>
-                <GoogleLogin
-                  onSuccess={credentialResponse => {
-                    console.log("✅ Gmail connecté:", credentialResponse);
-                    fetch(`${process.env.REACT_APP_API_URL}/auth/google`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ token: credentialResponse.credential })
-                    })
-                      .then(res => res.json())
-                      .then(data => {
-                        console.log("🌐 Réponse backend OAuth:", data);
+          <SectionTitle variant="h6">Intégrations</SectionTitle>
+          <SettingsCard>
+            <List disablePadding>
+              <ListItem>
+                <ListItemIcon><CalendarMonthIcon color="primary" /></ListItemIcon>
+                <ListItemText primary="Google Calendar" secondary="Non connecté" />
+                <Box sx={{ ml: 1 }}>
+                  <GoogleLogin
+                    scope="https://www.googleapis.com/auth/calendar"
+                    onSuccess={credentialResponse => {
+                      console.log("✅ Google Calendar connecté :", credentialResponse);
+                      fetch(`${API_URL}/auth/google`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: credentialResponse.credential })
                       })
-                      .catch(err => console.error("❌ Erreur Google login:", err));
-                  }}
-                  onError={() => console.log("❌ Erreur de connexion Google")}
-                />
-              </Box>
-            </ListItem>
+                        .then(res => res.json())
+                        .then(data => {
+                          console.log("📬 Réponse backend calendar:", data);
+                        })
+                        .catch(err => console.error("❌ Erreur Google login:", err));
+                    }}
+                    onError={() => console.log("❌ Erreur de connexion Google")}
+                  />
+                </Box>
+              </ListItem>
 
-            <Divider component="li" />
-            <ListItem>
-              <ListItemIcon><CalendarMonthIcon color="primary" /></ListItemIcon>
-              <ListItemText primary="Google Calendar" secondary="Non connecté" />
-            </ListItem>
+              <Divider component="li" />
+              <ListItem>
+                <ListItemIcon><EmailIcon color="primary" /></ListItemIcon>
+                <ListItemText primary="Outlook" secondary="Cliquez pour connecter" />
+                <Button variant="outlined" size="small" onClick={() => window.location.href = `${API_URL}/outlook/login`}>
+                  Connecter Outlook
+                </Button>
+              </ListItem>
 
-            <Divider component="li" />
-            <ListItem>
-              <ListItemIcon><WbSunnyIcon color="primary" /></ListItemIcon>
-              <ListItemText primary="OpenWeatherMap" secondary="Connecté" />
-            </ListItem>
-          </List>
-        </SettingsCard>
+              <Divider component="li" />
+              <ListItem>
+                <ListItemIcon><WbSunnyIcon color="primary" /></ListItemIcon>
+                <ListItemText primary="OpenWeatherMap" secondary="Connecté" />
+              </ListItem>
+            </List>
+          </SettingsCard>
 
-        <SectionTitle variant="h6">Enfants</SectionTitle>
-        <SettingsCard>
-          <List disablePadding>
-            {children.map((child, index) => (
-              <React.Fragment key={child.id}>
-                <ListItem>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: 'primary.main' }}><ChildCareIcon /></Avatar>
-                  </ListItemAvatar>
-                  <ListItemText primary={child.name} secondary={`${child.age} ans`} />
-                  <Button startIcon={<EditIcon />} size="small" variant="outlined"
-                    onClick={() => openEditDialog('Enfant', `${child.name},${child.age}`, (val) => {
-                      const [name, age] = val.split(',');
-                      updateChild(child.id, { name, age: parseInt(age) });
-                    })}>
-                    Modifier
-                  </Button>
-                </ListItem>
-                {index < children.length - 1 && <Divider component="li" />}
-              </React.Fragment>
-            ))}
-            <ListItem sx={{ mt: 1 }}>
-              <Button startIcon={<AddIcon />} variant="contained" color="primary" fullWidth onClick={addChild}>
-                Ajouter un enfant
-              </Button>
-            </ListItem>
-          </List>
-        </SettingsCard>
+          <SectionTitle variant="h6">Enfants</SectionTitle>
+          <SettingsCard>
+            <List disablePadding>
+              {children.map((child, index) => (
+                <React.Fragment key={child.id}>
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: 'primary.main' }}><ChildCareIcon /></Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary={child.name} secondary={`${child.age} ans`} />
+                    <Button startIcon={<EditIcon />} size="small" variant="outlined"
+                      onClick={() => openEditDialog('Enfant', `${child.name},${child.age}`, (val) => {
+                        const [name, age] = val.split(',');
+                        updateChild(child.id, { name, age: parseInt(age) });
+                      })}>
+                      Modifier
+                    </Button>
+                  </ListItem>
+                  {index < children.length - 1 && <Divider component="li" />}
+                </React.Fragment>
+              ))}
+              <ListItem sx={{ mt: 1 }}>
+                <Button startIcon={<AddIcon />} variant="contained" color="primary" fullWidth onClick={addChild}>
+                  Ajouter un enfant
+                </Button>
+              </ListItem>
+            </List>
+          </SettingsCard>
 
-        <Dialog open={editDialog.open} onClose={() => setEditDialog({ ...editDialog, open: false })}>
-          <DialogTitle>Modifier {editDialog.label}</DialogTitle>
-          <DialogContent>
-            <TextField
-              fullWidth
-              autoFocus
-              label={editDialog.label}
-              value={editDialog.value}
-              onChange={(e) => setEditDialog({ ...editDialog, value: e.target.value })}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setEditDialog({ ...editDialog, open: false })}>Annuler</Button>
-            <Button onClick={handleDialogSave} variant="contained">Enregistrer</Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </Container>
+          <Dialog open={editDialog.open} onClose={() => setEditDialog({ ...editDialog, open: false })}>
+            <DialogTitle>Modifier {editDialog.label}</DialogTitle>
+            <DialogContent>
+              <TextField
+                fullWidth
+                autoFocus
+                label={editDialog.label}
+                value={editDialog.value}
+                onChange={(e) => setEditDialog({ ...editDialog, value: e.target.value })}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEditDialog({ ...editDialog, open: false })}>Annuler</Button>
+              <Button onClick={handleDialogSave} variant="contained">Enregistrer</Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
+      </Container>
+    </GoogleOAuthProvider>
   );
 };
 
