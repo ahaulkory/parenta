@@ -1,4 +1,4 @@
-// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API + Gmail + LOGS DEBUG
+// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API + Gmail + LOGS
 
 import React, { useState } from 'react';
 import {
@@ -37,6 +37,8 @@ const SettingsCard = styled(Paper)(({ theme }) => ({
 }));
 
 const Settings = () => {
+  console.log("🟢 Composant Settings monté");
+
   const [integrations, setIntegrations] = useState({
     gmail: false,
     outlook: false,
@@ -51,26 +53,25 @@ const Settings = () => {
   const [editDialog, setEditDialog] = useState({ open: false, label: '', value: '', onSave: () => {} });
 
   const openEditDialog = (label, currentValue, onSave) => {
-    console.log(`📝 Ouverture du dialogue pour : ${label}`);
+    console.log(`✏️ Ouverture du Dialog pour ${label} avec valeur actuelle: ${currentValue}`);
     setEditDialog({ open: true, label, value: currentValue, onSave });
   };
 
   const handleDialogSave = () => {
-    console.log(`💾 Sauvegarde du champ : ${editDialog.label} = ${editDialog.value}`);
+    console.log(`💾 Sauvegarde via Dialog de ${editDialog.label} avec valeur: ${editDialog.value}`);
     editDialog.onSave(editDialog.value);
     setEditDialog({ ...editDialog, open: false });
   };
 
   const updateUserInfo = async (field, value) => {
-    console.log(`🔄 Mise à jour utilisateur : ${field} = ${value}`);
+    console.log(`📡 Mise à jour utilisateur : ${field} => ${value}`);
     try {
-      const response = await fetch(`/api/user/${field}`, {
+      await fetch(`/api/user/${field}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
       });
-      const result = await response.json();
-      console.log('✅ Résultat:', result);
+      console.log(`✅ ${field} mis à jour avec succès`);
     } catch (error) {
       console.error(`❌ Erreur mise à jour ${field}:`, error);
     }
@@ -86,7 +87,7 @@ const Settings = () => {
         body: JSON.stringify(newChild)
       });
       const created = await res.json();
-      console.log("✅ Enfant ajouté :", created);
+      console.log("✅ Enfant ajouté:", created);
       setChildren([...children, created]);
     } catch (err) {
       console.error('❌ Erreur ajout enfant:', err);
@@ -94,7 +95,7 @@ const Settings = () => {
   };
 
   const updateChild = async (childId, updatedData) => {
-    console.log(`🔄 Mise à jour enfant ID ${childId}`, updatedData);
+    console.log(`🛠️ Mise à jour enfant ID ${childId} avec :`, updatedData);
     try {
       await fetch(`/api/children/${childId}`, {
         method: 'PUT',
@@ -104,6 +105,7 @@ const Settings = () => {
       setChildren(
         children.map((c) => (c.id === childId ? { ...c, ...updatedData } : c))
       );
+      console.log("✅ Enfant mis à jour dans le state");
     } catch (err) {
       console.error('❌ Erreur mise à jour enfant:', err);
     }
@@ -146,15 +148,17 @@ const Settings = () => {
               <Box sx={{ ml: 1 }}>
                 <GoogleLogin
                   onSuccess={credentialResponse => {
-                    console.log("✅ Gmail connecté :", credentialResponse);
+                    console.log("✅ Gmail connecté:", credentialResponse);
                     fetch(`${process.env.REACT_APP_API_URL}/auth/google`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ token: credentialResponse.credential })
                     })
                       .then(res => res.json())
-                      .then(data => console.log("Réponse backend:", data))
-                      .catch(err => console.error("Erreur Google login :", err));
+                      .then(data => {
+                        console.log("🌐 Réponse backend OAuth:", data);
+                      })
+                      .catch(err => console.error("❌ Erreur Google login:", err));
                   }}
                   onError={() => console.log("❌ Erreur de connexion Google")}
                 />
