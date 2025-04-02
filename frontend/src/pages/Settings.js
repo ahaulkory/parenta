@@ -1,4 +1,4 @@
-// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API + Gmail
+// ✅ SETTINGS.JS complet, modulaire, connecté au backend avec API + Gmail + LOGS DEBUG
 
 import React, { useState } from 'react';
 import {
@@ -51,27 +51,33 @@ const Settings = () => {
   const [editDialog, setEditDialog] = useState({ open: false, label: '', value: '', onSave: () => {} });
 
   const openEditDialog = (label, currentValue, onSave) => {
+    console.log(`📝 Ouverture du dialogue pour : ${label}`);
     setEditDialog({ open: true, label, value: currentValue, onSave });
   };
 
   const handleDialogSave = () => {
+    console.log(`💾 Sauvegarde du champ : ${editDialog.label} = ${editDialog.value}`);
     editDialog.onSave(editDialog.value);
     setEditDialog({ ...editDialog, open: false });
   };
 
   const updateUserInfo = async (field, value) => {
+    console.log(`🔄 Mise à jour utilisateur : ${field} = ${value}`);
     try {
-      await fetch(`/api/user/${field}`, {
+      const response = await fetch(`/api/user/${field}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
       });
+      const result = await response.json();
+      console.log('✅ Résultat:', result);
     } catch (error) {
-      console.error(`Erreur mise à jour ${field}:`, error);
+      console.error(`❌ Erreur mise à jour ${field}:`, error);
     }
   };
 
   const addChild = async () => {
+    console.log("👶 Bouton 'Ajouter un enfant' cliqué");
     const newChild = { name: 'Nouvel enfant', age: 0 };
     try {
       const res = await fetch('/api/children', {
@@ -80,13 +86,15 @@ const Settings = () => {
         body: JSON.stringify(newChild)
       });
       const created = await res.json();
+      console.log("✅ Enfant ajouté :", created);
       setChildren([...children, created]);
     } catch (err) {
-      console.error('Erreur ajout enfant:', err);
+      console.error('❌ Erreur ajout enfant:', err);
     }
   };
 
   const updateChild = async (childId, updatedData) => {
+    console.log(`🔄 Mise à jour enfant ID ${childId}`, updatedData);
     try {
       await fetch(`/api/children/${childId}`, {
         method: 'PUT',
@@ -97,7 +105,7 @@ const Settings = () => {
         children.map((c) => (c.id === childId ? { ...c, ...updatedData } : c))
       );
     } catch (err) {
-      console.error('Erreur mise à jour enfant:', err);
+      console.error('❌ Erreur mise à jour enfant:', err);
     }
   };
 
@@ -145,9 +153,7 @@ const Settings = () => {
                       body: JSON.stringify({ token: credentialResponse.credential })
                     })
                       .then(res => res.json())
-                      .then(data => {
-                        console.log("Réponse backend:", data);
-                      })
+                      .then(data => console.log("Réponse backend:", data))
                       .catch(err => console.error("Erreur Google login :", err));
                   }}
                   onError={() => console.log("❌ Erreur de connexion Google")}
